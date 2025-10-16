@@ -1,3 +1,5 @@
+Adicionar o comando no final de ".com" da url
+
 POST /recurso: para criar um novo registro no banco.
 GET /recurso: para listar todos os registros.
 GET /recurso/:id: para buscar um registro por seu ID.
