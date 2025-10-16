@@ -16,6 +16,9 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
+// Rota principal para verificar se a API está no ar
+app.get('/', (req, res) => res.send('API Mestre dos Dados - Missão 8 - FUNCIONANDO!'));
+
 const airtable = new Airtable({
     apiKey: process.env.AIRTABLE_API_KEY,
 });
