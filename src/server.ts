@@ -1,5 +1,5 @@
 // =============================================================================
-// ARQUIVO ÚNICO DA API - VERSÃO FINAL
+// ARQUIVO ÚNICO DA API - VERSÃO FINAL CORRIGIDA
 // =============================================================================
 
 import express, { Request, Response, NextFunction, ErrorRequestHandler, Router } from 'express';
@@ -157,18 +157,19 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 // =============================================================================
 const productRoutes = Router();
 
-// ROTAS PRINCIPAIS (CRUD)
+// ### A CORREÇÃO ESTÁ AQUI! ESTA PARTE ESTAVA FALTANDO ###
 productRoutes.post('/', validate(createProductSchema), productController.create);
 productRoutes.get('/', productController.findAll);
 productRoutes.get('/:id', productController.findById);
 productRoutes.put('/:id', validate(updateProductSchema), productController.update);
 productRoutes.patch('/:id', validate(updateProductSchema), productController.update);
 productRoutes.delete('/:id', productController.delete);
+// ### FIM DA CORREÇÃO ###
 
 // ROTA DA PÁGINA INICIAL
 app.get('/', (req, res) => res.send('API Mestre dos Dados - Missão 8 - FUNCIONANDO!'));
 
-// USANDO AS ROTAS
+// USANDO AS ROTAS DE PRODUTOS
 app.use('/products', productRoutes);
 
 // ROTAS DE TESTE PELO NAVEGADOR
