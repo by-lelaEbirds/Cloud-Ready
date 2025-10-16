@@ -1,6 +1,5 @@
 // =============================================================================
-// ARQUIVO ÚNICO DA API - MISSÃO 8 (VERSÃO COM TESTES NO NAVEGADOR)
-// Copie e cole todo este conteúdo em src/server.ts
+// ARQUIVO ÚNICO DA API - VERSÃO FINAL
 // =============================================================================
 
 import express, { Request, Response, NextFunction, ErrorRequestHandler, Router } from 'express';
@@ -15,9 +14,6 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-
-// Rota principal para verificar se a API está no ar
-app.get('/', (req, res) => res.send('API Mestre dos Dados - Missão 8 - FUNCIONANDO!'));
 
 const airtable = new Airtable({
     apiKey: process.env.AIRTABLE_API_KEY,
@@ -46,7 +42,6 @@ const updateProductSchema = z.object({
     stock: z.number().int().positive().optional(),
   }),
 });
-
 
 // =============================================================================
 // 3. REPOSITORY
@@ -118,25 +113,65 @@ const productController = {
       return res.status(200).json(products);
     } catch (error) { next(error); }
   },
-  // ... (outros métodos do controller permanecem os mesmos)
+  findById: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const product = await productService.findById(req.params.id);
+      return res.status(200).json(product);
+    } catch (error) { next(error); }
+  },
+  update: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const updated = await productService.update(req.params.id, req.body);
+      return res.status(200).json(updated);
+    } catch (error) { next(error); }
+  },
+  delete: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await productService.delete(req.params.id);
+      return res.status(204).send();
+    } catch (error) { next(error); }
+  },
 };
-// Controller completo omitido para brevidade, mas o seu já está correto.
 
 // =============================================================================
-// 6. MIDDLEWARES E ROTAS PRINCIPAIS (COMO ANTES)
+// 6. MIDDLEWARES
+// =============================================================================
+const validate = (schema: AnyZodObject) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      schema.parse({ body: req.body, query: req.query, params: req.params });
+      next();
+    } catch (e: any) { return res.status(400).json(e.errors); }
+  };
+
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  console.error(err);
+  if (err.message === 'Product not found') {
+    return res.status(404).json({ message: err.message });
+  }
+  return res.status(500).json({ message: 'Internal Server Error' });
+};
+
+// =============================================================================
+// 7. ROTAS
 // =============================================================================
 const productRoutes = Router();
-// ... (código das rotas principais omitido, o seu já está correto)
-// ... (código dos middlewares omitido, o seu já está correto)
+
+// ROTAS PRINCIPAIS (CRUD)
+productRoutes.post('/', validate(createProductSchema), productController.create);
+productRoutes.get('/', productController.findAll);
+productRoutes.get('/:id', productController.findById);
+productRoutes.put('/:id', validate(updateProductSchema), productController.update);
+productRoutes.patch('/:id', validate(updateProductSchema), productController.update);
+productRoutes.delete('/:id', productController.delete);
+
+// ROTA DA PÁGINA INICIAL
+app.get('/', (req, res) => res.send('API Mestre dos Dados - Missão 8 - FUNCIONANDO!'));
+
+// USANDO AS ROTAS
 app.use('/products', productRoutes);
-app.use((err: any, req: Request, res: Response, next: NextFunction) => { /*... seu error handler aqui ...*/ });
 
-
-// =============================================================================
-// 7. PAINEL DE TESTES VIA NAVEGADOR (A NOSSA NOVA MÁGICA!)
-// =============================================================================
-
-// Rota para CRIAR um produto de teste fixo
+// ROTAS DE TESTE PELO NAVEGADOR
 app.get('/test/create', async (req: Request, res: Response) => {
     try {
         const produtoDeTeste = {
@@ -152,7 +187,6 @@ app.get('/test/create', async (req: Request, res: Response) => {
     }
 });
 
-// Rota para DELETAR o último produto da lista
 app.get('/test/delete-last', async (req: Request, res: Response) => {
     try {
         const todosProdutos = await productService.findAll();
@@ -166,6 +200,9 @@ app.get('/test/delete-last', async (req: Request, res: Response) => {
         res.status(500).send(`<h1>Erro ao deletar produto:</h1><p>${error.message}</p>`);
     }
 });
+
+// USANDO O ERROR HANDLER (DEVE SER O ÚLTIMO)
+app.use(errorHandler);
 
 // =============================================================================
 // 8. INICIANDO O SERVIDOR
